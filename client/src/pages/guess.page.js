@@ -210,7 +210,7 @@ export class GuessPage extends React.Component {
   renderAnswerBox() {
     return (
       <div className="answer">
-        <button onClick={this.handleGiveUp}>Give Up</button>
+        <button onClick={this.handleGiveUp}>Show Description</button>
       </div>
     );
   }

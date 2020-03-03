@@ -1,9 +1,36 @@
 import React from 'react';
 import axios from 'axios';
+import Speech from 'speak-tts'; // es6
+
+import { EditDoc } from '../components/edit-doc';
+
+const speech = new Speech(); // will throw an exception if not browser supported
+if (speech.hasBrowserSupport()) {
+  // returns a boolean
+  console.log('speech synthesis supported');
+}
+
+speech
+  .init({
+    volume: 1,
+    lang: 'en-US',
+    rate: 0.8,
+    pitch: 1,
+    voice: 'Microsoft Zira Desktop - English (United States)',
+    splitSentences: true,
+  })
+  .then(data => {
+    // The "data" object contains the list of available voices and the voice synthesis params
+    console.log('Speech is ready, voices are available'); //, data);
+  })
+  .catch(e => {
+    console.error('An error occured while initializing : ', e);
+  });
 
 const GUESSING = 0;
 const GIVE_UP = 1;
 const HIT = 2;
+const EDITING = 3;
 
 export class GuessPage extends React.Component {
   constructor(props) {
@@ -25,6 +52,21 @@ export class GuessPage extends React.Component {
       this.handleNext();
     } else if (e.keyCode === 38) {
       // up
+      if (this.state.docs && this.state.docs.length > 0) {
+        const doc = this.state.docs[this.state.index];
+        let full_text = this.makeFullText(doc); // doc.question.replace(/_\$\d+_/g, '____');
+
+        speech
+          .speak({
+            text: full_text,
+          })
+          .then(() => {
+            //console.log('Success !');
+          })
+          .catch(e => {
+            console.error('An error occurred :', e);
+          });
+      }
     } else if (e.keyCode === 40) {
       // down
       this.handleGiveUp();
@@ -52,6 +94,8 @@ export class GuessPage extends React.Component {
     if (this.state.docs) {
       if (this.state.state === GUESSING) {
         return this.renderDocGuessing();
+      } else if (this.state.state === EDITING) {
+        return this.renderDocEditing();
       } else {
         return this.renderDocGiveUp();
       }
@@ -125,6 +169,44 @@ export class GuessPage extends React.Component {
     }
   };
 
+  handleEdit = e => {
+    this.setState({
+      state: EDITING,
+    });
+  };
+
+  handleDoneEditing = async doc_content => {
+    const doc = this.state.docs[this.state.index];
+    const { question, answer, description } = doc_content;
+
+    try {
+      /*const result = */ await axios.put(`/doc/${doc.id}`, {
+        question,
+        answer,
+        description,
+      });
+
+      const docs = this.state.docs;
+      docs[this.state.index] = {
+        id: doc.id,
+        ...doc_content,
+      };
+
+      setTimeout(() => {
+        this.setState({
+          docs,
+          state: GUESSING,
+        });
+      }, 0);
+
+      return { message: 'OK' };
+    } catch (error) {
+      return { message: error.response.data.message };
+    }
+
+    return { clear: false, message: '' };
+  };
+
   handleChange = e => {
     const { value, name } = e.target;
     this.setState({ [name]: value });
@@ -138,6 +220,7 @@ export class GuessPage extends React.Component {
     return (
       <div>
         {this.renderHeader()}
+        <div></div>
         <div className="doc">
           <div className="question">
             <h3>{question}</h3>
@@ -145,6 +228,25 @@ export class GuessPage extends React.Component {
           {this.state.errorText ? this.renderErrorText() : ''}
           {this.renderAnswerBox()}
         </div>
+        {this.renderFooter()}
+      </div>
+    );
+  }
+
+  renderDocEditing() {
+    const doc = this.state.docs[this.state.index];
+
+    let question = this.makeFullText(doc); // doc.question.replace(/_\$\d+_/g, '____');
+
+    return (
+      <div>
+        {this.renderHeader()}
+        <EditDoc
+          question={question}
+          answer={doc.answer}
+          description={doc.description}
+          handleSubmit={this.handleDoneEditing}
+        />
         {this.renderFooter()}
       </div>
     );
@@ -183,14 +285,19 @@ export class GuessPage extends React.Component {
   }
 
   renderFooter() {
-    return (
-      <div className="footer">
-        <div className="nav">
-          <button onClick={this.handlePrev}>Previous</button>
-          <button onClick={this.handleNext}>Next</button>
+    if (this.state.state !== EDITING) {
+      return (
+        <div className="footer">
+          <div className="nav">
+            <button onClick={this.handlePrev}>Previous</button>
+            <button onClick={this.handleNext}>Next</button>
+            <button onClick={this.handleEdit}>Edit</button>
+          </div>
         </div>
-      </div>
-    );
+      );
+    } else {
+      return <div></div>;
+    }
   }
 
   renderAnswerBoxOld() {

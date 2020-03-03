@@ -30,6 +30,11 @@ export class DocController {
     return this.docService.createDoc(docContent);
   }
 
+  @Get('/:id')
+  getDoc(@Param('id', ParseIntPipe) id: number) {
+    return this.docService.getDoc(id);
+  }
+
   @Put('/:id')
   updateDoc(
     @Param('id', ParseIntPipe) id: number,

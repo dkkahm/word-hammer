@@ -4,12 +4,23 @@ export class EditDoc extends React.Component {
   constructor(props) {
     super(props);
 
+    console.log('props=', this.props);
+
     this.state = {
-      question: this.props.question,
-      answer: this.props.answer,
-      description: this.props.description,
+      question: props.question,
+      answer: props.answer,
+      description: props.description,
       resultText: '',
     };
+  }
+
+  componentWillReceiveProps(nextProps) {
+    this.setState({
+      question: nextProps.question,
+      answer: nextProps.answer,
+      description: nextProps.description,
+      resultText: '',
+    });
   }
 
   handleChange = e => {

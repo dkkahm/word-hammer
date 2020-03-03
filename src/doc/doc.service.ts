@@ -31,6 +31,10 @@ export class DocService {
     return doc;
   }
 
+  async getDoc(id: number) {
+    return await this.docRepository.findOne({ id });
+  }
+
   async updateDoc(id: number, docContent: DocContentDto) {
     const saved_doc = await this.docRepository.findOne({ id });
     if (!saved_doc) throw new BadRequestException('no doc found');

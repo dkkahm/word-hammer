@@ -32,7 +32,7 @@ export class GuessPage extends React.Component {
   };
 
   async componentDidMount() {
-    const result = await axios.get('/api/session?count=100');
+    const result = await axios.get('/session?count=100');
     this.setState({
       docs: result.data,
       index: 0,
@@ -96,7 +96,7 @@ export class GuessPage extends React.Component {
           errorText: '아닙니다~',
         });
       } else {
-        const result = await axios.post('/api/session/guess', {
+        const result = await axios.post('/session/guess', {
           docId: doc.id,
           hit: true,
         });
@@ -113,7 +113,7 @@ export class GuessPage extends React.Component {
     if (this.state.state !== GIVE_UP) {
       const doc = this.state.docs[this.state.index];
 
-      const result = await axios.post('/api/session/guess', {
+      const result = await axios.post('/session/guess', {
         docId: doc.id,
         hit: false,
       });

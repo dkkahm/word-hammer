@@ -17,7 +17,7 @@ export class InputPage extends React.Component {
     const { question, answer, description } = doc;
 
     try {
-      /*const result = */ await axios.post('/api/doc', {
+      /*const result = */ await axios.post('/doc', {
         question,
         answer,
         description,

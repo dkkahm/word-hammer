@@ -1,27 +1,42 @@
 import React from 'react';
+import axios from 'axios';
+import { EditDoc } from '../components/edit-doc';
 
 export class InputPage extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      question: '',
+      answer: '',
+      description: '',
+    };
+  }
+
+  handleSubmit = async doc => {
+    const { question, answer, description } = doc;
+
+    try {
+      /*const result = */ await axios.post('/api/doc', {
+        question,
+        answer,
+        description,
+      });
+
+      return { clear: true, message: 'OK' };
+    } catch (error) {
+      return { message: error.response.data.message };
+    }
+  };
+
   render() {
     return (
-      <div>
-        <div>
-          <button>To Guess Page</button>
-        </div>
-
-        <div className="doc">
-          <form>
-            <div className="question">
-              <textarea name="question" id="question"></textarea>
-            </div>
-            <div className="answer">
-              <textarea name="answer" id="answer"></textarea>
-            </div>
-            <div>
-              <button>Submit</button>
-            </div>
-          </form>
-        </div>
-      </div>
+      <EditDoc
+        question={this.state.question}
+        answer={this.state.answer}
+        description={this.state.description}
+        handleSubmit={this.handleSubmit}
+      />
     );
   }
 }

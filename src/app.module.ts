@@ -22,7 +22,7 @@ import { LoggerMiddleware } from './common/middlewares/logger.middlewares';
   controllers: [AppController],
 })
 export class AppModule {
-  // configure(consumter: MiddlewareConsumer) {
-  //   consumter.apply(LoggerMiddleware).forRoutes('/');
-  // }
+  configure(consumter: MiddlewareConsumer) {
+    consumter.apply(LoggerMiddleware).forRoutes('/');
+  }
 }

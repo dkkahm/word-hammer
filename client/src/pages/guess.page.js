@@ -14,6 +14,23 @@ export class GuessPage extends React.Component {
     };
   }
 
+  keyHandling = e => {
+    // console.log(e.keyCode);
+
+    if (e.keyCode === 37) {
+      // left
+      this.handlePrev();
+    } else if (e.keyCode === 39) {
+      // right
+      this.handleNext();
+    } else if (e.keyCode === 38) {
+      // up
+    } else if (e.keyCode === 40) {
+      // down
+      this.handleGiveUp();
+    }
+  };
+
   async componentDidMount() {
     const result = await axios.get('/api/session?count=100');
     this.setState({
@@ -23,6 +40,12 @@ export class GuessPage extends React.Component {
       errorText: '',
       inputText: '',
     });
+
+    window.addEventListener('keyup', this.keyHandling);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('keyup', this.keyHandling);
   }
 
   render() {
@@ -110,7 +133,7 @@ export class GuessPage extends React.Component {
   renderDocGuessing() {
     const doc = this.state.docs[this.state.index];
 
-    let question = doc.question.replace(/_\$\d+_/g, '____');
+    let question = this.makeFullText(doc); // doc.question.replace(/_\$\d+_/g, '____');
 
     return (
       <div>
@@ -130,7 +153,7 @@ export class GuessPage extends React.Component {
   renderDocGiveUp() {
     const doc = this.state.docs[this.state.index];
 
-    let give_up_text = this.makeGiveUpText(doc);
+    let give_up_text = this.makeFullText(doc);
 
     return (
       <div>
@@ -152,9 +175,6 @@ export class GuessPage extends React.Component {
   renderHeader() {
     return (
       <div className="header">
-        <div className="nav">
-          <button>To Input Page</button>
-        </div>
         <div className="progress">
           <div>{`${this.state.index + 1}/${this.state.docs.length}`}</div>
         </div>
@@ -173,7 +193,7 @@ export class GuessPage extends React.Component {
     );
   }
 
-  renderAnswerBox() {
+  renderAnswerBoxOld() {
     return (
       <div className="answer">
         <input
@@ -187,6 +207,14 @@ export class GuessPage extends React.Component {
     );
   }
 
+  renderAnswerBox() {
+    return (
+      <div className="answer">
+        <button onClick={this.handleGiveUp}>Give Up</button>
+      </div>
+    );
+  }
+
   renderErrorText() {
     return <div className="error">{this.state.errorText}</div>;
   }
@@ -195,12 +223,12 @@ export class GuessPage extends React.Component {
     return <div>Loading</div>;
   }
 
-  makeGiveUpText(doc) {
+  makeFullText(doc) {
     const answer_list = doc.answer.split(' ');
     let give_up_text = doc.question;
 
     for (let i = 0; i < doc.answerLength; ++i) {
-      const slot_text = `_\$${i + 1}_`;
+      const slot_text = `_$${i + 1}_`;
       give_up_text = give_up_text.replace(slot_text, answer_list[i]);
     }
 

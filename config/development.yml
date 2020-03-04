@@ -5,7 +5,7 @@ typeorm:
     port: 3306
     username: 'root'
     password: '1234'
-    database: 'wordhammer'
+    database: 'wordhammer_dev'
     synchronize: true
 jwt:
   secret: '1234'

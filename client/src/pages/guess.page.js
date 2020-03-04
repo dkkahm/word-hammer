@@ -27,17 +27,21 @@ speech
     console.error('An error occured while initializing : ', e);
   });
 
-const GUESSING = 0;
-const GIVE_UP = 1;
-const HIT = 2;
-const EDITING = 3;
+const LOADING = 0;
+const EMPTY = 1;
+const GUESSING = 2;
+const GIVE_UP = 3;
+const HIT = 4;
+const EDITING = 5;
 
 export class GuessPage extends React.Component {
   constructor(props) {
     super(props);
 
     this.state = {
+      state: LOADING,
       inputText: '',
+      showFullText: true,
     };
   }
 
@@ -75,15 +79,30 @@ export class GuessPage extends React.Component {
 
   async componentDidMount() {
     const result = await axios.get('/session?count=100');
-    this.setState({
-      docs: result.data,
-      index: 0,
-      state: GUESSING,
-      errorText: '',
-      inputText: '',
-    });
 
-    window.addEventListener('keyup', this.keyHandling);
+    let docs = result.data;
+
+    if (docs.length === 0) {
+      this.setState({
+        state: EMPTY,
+      });
+    } else {
+      docs.forEach(doc => {
+        doc.bar_text = this.makeBarText(doc);
+        doc.full_text = this.makeFullText(doc);
+        doc.slot_text = this.makeSlotText(doc);
+      });
+
+      this.setState({
+        docs: docs,
+        index: 0,
+        state: GUESSING,
+        errorText: '',
+        inputText: '',
+      });
+
+      window.addEventListener('keyup', this.keyHandling);
+    }
   }
 
   componentWillUnmount() {
@@ -91,16 +110,16 @@ export class GuessPage extends React.Component {
   }
 
   render() {
-    if (this.state.docs) {
-      if (this.state.state === GUESSING) {
-        return this.renderDocGuessing();
-      } else if (this.state.state === EDITING) {
-        return this.renderDocEditing();
-      } else {
-        return this.renderDocGiveUp();
-      }
-    } else {
+    if (this.state.state === LOADING) {
       return this.renderLoading();
+    } else if (this.state.state === EMPTY) {
+      return this.renderEmpty();
+    } else if (this.state.state === GUESSING) {
+      return this.renderDocGuessing();
+    } else if (this.state.state === EDITING) {
+      return this.renderDocEditing();
+    } else {
+      return this.renderDocGiveUp();
     }
   }
 
@@ -176,21 +195,25 @@ export class GuessPage extends React.Component {
   };
 
   handleDoneEditing = async doc_content => {
+    const docs = this.state.docs;
     const doc = this.state.docs[this.state.index];
+
     const { question, answer, description } = doc_content;
+    // console.log(doc_content);
 
     try {
-      /*const result = */ await axios.put(`/doc/${doc.id}`, {
+      const result = await axios.put(`/doc/${doc.id}`, {
         question,
         answer,
         description,
       });
 
-      const docs = this.state.docs;
-      docs[this.state.index] = {
-        id: doc.id,
-        ...doc_content,
-      };
+      doc.question = result.data.question;
+      doc.answer = result.data.answer;
+      doc.description = result.data.description;
+      doc.bar_text = this.makeBarText(doc);
+      doc.full_text = this.makeFullText(doc);
+      doc.slot_text = this.makeSlotText(doc);
 
       setTimeout(() => {
         this.setState({
@@ -208,22 +231,27 @@ export class GuessPage extends React.Component {
   };
 
   handleChange = e => {
-    const { value, name } = e.target;
+    const target = e.target;
+    const value = target.type === 'checkbox' ? target.checked : target.value;
+    const name = target.name;
+
+    this.setState({
+      [name]: value,
+    });
+
     this.setState({ [name]: value });
   };
 
   renderDocGuessing() {
     const doc = this.state.docs[this.state.index];
 
-    let question = this.makeFullText(doc); // doc.question.replace(/_\$\d+_/g, '____');
-
     return (
       <div>
         {this.renderHeader()}
-        <div></div>
+        <div>{this.renderOptionBox()}</div>
         <div className="doc">
           <div className="question">
-            <h3>{question}</h3>
+            <h3>{this.state.showFullText ? doc.full_text : doc.bar_text}</h3>
           </div>
           {this.state.errorText ? this.renderErrorText() : ''}
           {this.renderAnswerBox()}
@@ -236,13 +264,11 @@ export class GuessPage extends React.Component {
   renderDocEditing() {
     const doc = this.state.docs[this.state.index];
 
-    let question = this.makeFullText(doc); // doc.question.replace(/_\$\d+_/g, '____');
-
     return (
       <div>
         {this.renderHeader()}
         <EditDoc
-          question={question}
+          question={doc.slot_text}
           answer={doc.answer}
           description={doc.description}
           handleSubmit={this.handleDoneEditing}
@@ -255,15 +281,13 @@ export class GuessPage extends React.Component {
   renderDocGiveUp() {
     const doc = this.state.docs[this.state.index];
 
-    let give_up_text = this.makeFullText(doc);
-
     return (
       <div>
         {this.renderHeader()}
 
         <div className="doc">
           <div className="question">
-            <h3>{give_up_text}</h3>
+            <h3>{doc.full_text}</h3>
           </div>
           <div className="detail">
             <h4>{doc.description}</h4>
@@ -280,6 +304,21 @@ export class GuessPage extends React.Component {
         <div className="progress">
           <div>{`${this.state.index + 1}/${this.state.docs.length}`}</div>
         </div>
+      </div>
+    );
+  }
+
+  renderOptionBox() {
+    return (
+      <div className="option-box">
+        <label htmlFor="showFullText">Show full text</label>
+        <input
+          type="checkbox"
+          id="showFullText"
+          name="showFullText"
+          checked={this.state.showFullText}
+          onChange={this.handleChange}
+        ></input>
       </div>
     );
   }
@@ -330,15 +369,41 @@ export class GuessPage extends React.Component {
     return <div>Loading</div>;
   }
 
-  makeFullText(doc) {
-    const answer_list = doc.answer.split(' ');
-    let give_up_text = doc.question;
+  renderEmpty() {
+    return <div>No document</div>;
+  }
+
+  makeBarText(doc) {
+    let bar_text = doc.question;
 
     for (let i = 0; i < doc.answerLength; ++i) {
-      const slot_text = `_$${i + 1}_`;
-      give_up_text = give_up_text.replace(slot_text, answer_list[i]);
+      const slot_string = `_$${i + 1}_`;
+      bar_text = bar_text.replace(slot_string, '____');
     }
 
-    return give_up_text;
+    return bar_text;
+  }
+
+  makeFullText(doc) {
+    const answer_list = doc.answer.split(' ');
+    let full_text = doc.question;
+
+    for (let i = 0; i < doc.answerLength; ++i) {
+      const slot_string = `_$${i + 1}_`;
+      full_text = full_text.replace(slot_string, answer_list[i]);
+    }
+
+    return full_text;
+  }
+
+  makeSlotText(doc) {
+    let slot_text = doc.question;
+
+    for (let i = 0; i < doc.answerLength; ++i) {
+      const slot_string = `_$${i + 1}_`;
+      slot_text = slot_text.replace(slot_string, '&&&&');
+    }
+
+    return slot_text;
   }
 }

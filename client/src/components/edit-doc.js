@@ -81,6 +81,15 @@ export class EditDoc extends React.Component {
               value={this.state.question}
             ></textarea>
           </div>
+          <div className="answer">
+            <label htmlFor="answer">Answer</label>
+            <input
+              name="answer"
+              id="answer"
+              onChange={this.handleChange}
+              value={this.state.answer}
+            ></input>
+          </div>
           <div className="description">
             <label htmlFor="description">Description</label>
             <textarea

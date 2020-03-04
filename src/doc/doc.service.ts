@@ -67,8 +67,13 @@ export class DocService {
     //   throw new BadRequestException(`no slot, slot is ${SLOT_STRING}`);
 
     let answer_length = answer.split(' ').length;
-    // if (slot_length !== answer_length)
-    //   throw new BadRequestException('slots are not match with answer');
+
+    if (slot_length > 0) {
+      if (answer_length > 0) {
+        if (slot_length !== answer_length)
+          throw new BadRequestException('slots are not match with answer');
+      }
+    }
 
     const doc = new Doc();
     doc.question = question;

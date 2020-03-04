@@ -58,7 +58,7 @@ export class GuessPage extends React.Component {
       // up
       if (this.state.docs && this.state.docs.length > 0) {
         const doc = this.state.docs[this.state.index];
-        let full_text = this.makeFullText(doc); // doc.question.replace(/_\$\d+_/g, '____');
+        let full_text = doc.full_text; // doc.question.replace(/_\$\d+_/g, '____');
 
         speech
           .speak({

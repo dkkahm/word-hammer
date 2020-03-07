@@ -12,7 +12,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from 'src/common/decorators/get-user.decorator';
 import { User } from 'src/auth/model/user.entity';
-import { DocContentDto } from './dto/doc-content';
+import { DocContentDto, DocContentMultiDto } from './dto/doc-content';
 import { DocService } from './doc.service';
 
 @Controller('doc')
@@ -28,6 +28,11 @@ export class DocController {
   @Post()
   createDoc(@Body() docContent: DocContentDto) {
     return this.docService.createDoc(docContent);
+  }
+
+  @Post('/multi')
+  createDocMulti(@Body() docContentMulti: DocContentMultiDto) {
+    return this.docService.createDocMulti(docContentMulti);
   }
 
   @Get('/:id')

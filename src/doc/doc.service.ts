@@ -7,8 +7,9 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Doc } from './model/doc.entity';
 import { Repository } from 'typeorm';
-import { DocContentDto } from './dto/doc-content';
+import { DocContentDto, DocContentMultiDto } from './dto/doc-content';
 import * as sha256 from 'sha256';
+import { CreateDocMultiRsp } from './dto/create-doc-multi-rsp';
 
 const SLOT_STRING = '&&&&';
 
@@ -21,6 +22,7 @@ export class DocService {
 
   async createDoc(docContent: DocContentDto) {
     const doc = this.getDocEntityFromDocContent(docContent);
+    // console.log(doc);
     try {
       await this.docRepository.save(doc);
     } catch (error) {
@@ -29,6 +31,48 @@ export class DocService {
       }
     }
     return doc;
+  }
+
+  async createDocMulti(
+    docContentMulti: DocContentMultiDto,
+  ): Promise<CreateDocMultiRsp> {
+    let confict_count = 0;
+    let error_count = 0;
+    let success_count = 0;
+
+    // await Promise.all(
+    //   docContentMulti.contents.map(async docContent => {
+    //     try {
+    //       await this.createDoc(docContent);
+    //       ++success_count;
+    //     } catch (error) {
+    //       if (!(error instanceof ConflictException)) {
+    //         ++confict_count;
+    //       } else {
+    //         ++error_count;
+    //       }
+    //     }
+    //   }),
+    // );
+
+    for (const docContent of docContentMulti.contents) {
+      try {
+        await this.createDoc(docContent);
+        ++success_count;
+      } catch (error) {
+        if (!(error instanceof ConflictException)) {
+          ++confict_count;
+        } else {
+          ++error_count;
+        }
+      }
+    }
+
+    return {
+      successCount: success_count,
+      conflictCount: confict_count,
+      errorCount: error_count,
+    };
   }
 
   async getDoc(id: number) {
@@ -85,16 +129,7 @@ export class DocService {
     return doc;
   }
 
-  private cleanUpText(question: string): string {
-    question = question.trim();
-
-    while (true) {
-      const space_index = question.indexOf('  ');
-      if (space_index === -1) break;
-
-      question = question.replace('  ', ' ');
-    }
-
-    return question;
+  private cleanUpText(text: string): string {
+    return text.replace(/\s+/g, ' ').trim();
   }
 }

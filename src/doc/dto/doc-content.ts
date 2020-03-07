@@ -3,3 +3,7 @@ export class DocContentDto {
   answer: string;
   description: string;
 }
+
+export class DocContentMultiDto {
+  contents: DocContentDto[];
+}
